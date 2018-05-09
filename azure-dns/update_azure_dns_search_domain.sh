@@ -31,7 +31,7 @@ echo "Updating resolv.conf"
 i=0
 until [ $i -ge 24 ]
 do
-    domain=$(nslookup "$(hostname -I | tr -d ' ')" | grep -i name | cut -d ' ' -f 3 | cut -d '.' -f 2- | rev | cut -c 2- | rev)
+    domain=$(nslookup "$(hostname -I | tr -d ' ')" | grep -m 1 -i "name =" | cut -d ' ' -f 3 | cut -d '.' -f 2- | rev | cut -c 2- | rev)
     [ ! -z "$domain" ] && break
     sleep 5
     i=$((i+1))
@@ -67,9 +67,12 @@ until [ $i -ge 24 ]
 do
     sleep 5
     i=$((i+1))
-    # Confirm search domain in resolv.conf is successfully updated
-    # Host FQDN should not contain the Azure internal domain "internal.cloudapp.net"
-    ! hostname -f | grep -e "internal\\.cloudapp\\.net$" && break
+    # Confirm search domain in resolv.conf is successfully updated to what
+    # reverse lookup returns
+    domain=$(nslookup "$(hostname -I | tr -d ' ')" | grep -m 1 -i "name =" | cut -d ' ' -f 3 | cut -d '.' -f 2- | rev | cut -c 2- | rev)
+    if [ ! -z "$domain" ]; then
+        hostname -f | grep -e "$domain" && break
+    fi
 done
 
 if [ $i -ge 24 ]; then
