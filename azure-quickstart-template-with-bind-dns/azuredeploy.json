@@ -1,0 +1,313 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUsername": {
+      "type": "string",
+      "defaultValue": "azureuser",
+      "metadata": {
+        "description": "Admin user name for the DNS server VM"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Admin password for the DNS server VM (A mix of upper and lower-case characters, digits and symbols)"
+      }
+    },
+    "instanceType": {
+      "type": "string",
+      "defaultValue": "Standard_A2_v2",
+      "metadata": {
+        "description": "The instance type of the DNS server VM"
+      }
+    },
+    "resourceNamePrefix": {
+      "type": "string",
+      "defaultValue": "altus-quickstart",
+      "metadata": {
+        "description": "Prefix for resource names"
+      }
+    },
+    "dnsHostName": {
+      "type": "string",
+      "defaultValue": "altus-quickstart-dns-server",
+      "metadata": {
+        "description": "Hostname for the DNS server"
+      }
+    },
+    "dnsPrivateZoneName": {
+      "type": "string",
+      "defaultValue": "altus.quickstart",
+      "metadata": {
+        "description": "DNS domain used by the DNS server"
+        }
+    },
+    "dnsVmIpAddress": {
+      "type": "string",
+      "defaultValue": "10.3.0.4",
+      "metadata": {
+        "description": "IP address for the DNS Server VM"
+      }
+    },
+    "addressPrefix": {
+      "type": "string",
+      "defaultValue": "10.3.0.0/24",
+      "metadata": {
+        "description": "Virtual Network address space"
+      }
+    }
+  },
+  "variables": {
+    "templateAPIVersion": "2017-05-10",
+    "contentVersion": "1.0.0.0",
+    "typeHandlerVersion": "2.0",
+    "resourceAPIVersions": {
+      "virtualNetworks": "2017-06-01",
+      "networkSecurityGroups": "2017-06-01",
+      "networkInterfaces": "2017-06-01",
+      "virtualMachines": "2017-03-30",
+      "virtualMachinesExtensions": "2017-03-30",
+      "userAssignedIdentities": "2015-08-31-PREVIEW"
+    },
+    "scriptsUri": "https://raw.githubusercontent.com/cloudera/altus-azure-tools/master/azure-quickstart-template-with-bind-dns",
+    "names": {
+      "networkSecurityGroup": "[concat(parameters('resourceNamePrefix'), '-nsg')]",
+      "virtualNetwork": "[concat(parameters('resourceNamePrefix'), '-vnet')]",
+      "virtualNetworkSubnet": "default",
+      "dnsVm": "[parameters('dnsHostName')]",
+      "dnsVmNic": "[concat(parameters('dnsHostName'), '-nic')]",
+      "osDisk": "[concat(parameters('dnsHostName'), '-osDisk')]",
+      "userAssignedIdentity": "[concat(parameters('resourceNamePrefix'), '-ua-msi')]"
+    },
+    "netConfig": {
+      "dnsHostName": "[parameters('dnsHostName')]",
+      "dnsPrivateZoneName": "[parameters('dnsPrivateZoneName')]",
+      "dnsVmIpAddress": "[parameters('dnsVmIpAddress')]",
+      "addressPrefix": "[parameters('addressPrefix')]"
+    },
+    "vmAttributes": {
+      "adminUsername": "[parameters('adminUsername')]",
+      "adminPassword": "[parameters('adminPassword')]",
+      "instanceType": "[parameters('instanceType')]"
+    },
+    "vNetId": "[resourceId('Microsoft.Network/virtualNetworks', variables('names').virtualNetwork)]"
+  },
+  "resources": [
+    {
+      "apiVersion": "[variables('resourceAPIVersions').networkSecurityGroups]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('names').networkSecurityGroup]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "SSH_116",
+            "properties": {
+              "description": "Allows SSH traffic to 52.88.35.116/32",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "52.88.35.116/32",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "SSH_7",
+            "properties": {
+              "description": "Allows SSH traffic to 52.37.120.7/32",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "52.37.120.7/32",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "SSH_144",
+            "properties": {
+              "description": "Allows SSH traffic to 50.112.20.144/32",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "50.112.20.144/32",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 102,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "SSH_60",
+            "properties": {
+              "description": "Allows SSH traffic to 34.211.1.60/32",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "34.211.1.60/32",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 103,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "SSH_237",
+            "properties": {
+              "description": "Allows SSH traffic to 34.210.228.237/32",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "34.210.228.237/32",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 104,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "SSH_120",
+            "properties": {
+              "description": "Allows SSH traffic to 52.26.206.120/32",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "52.26.206.120/32",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 105,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "[variables('resourceAPIVersions').virtualNetworks]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('names').virtualNetwork]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('netConfig').addressPrefix]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('names').virtualNetworkSubnet]",
+            "properties": {
+              "addressPrefix": "[variables('netConfig').addressPrefix]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "[variables('resourceAPIVersions').networkInterfaces]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('names').dnsVmNic]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('names').networkSecurityGroup)]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('names').virtualNetwork)]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "dnsVmIpconfig",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[variables('netConfig').dnsVmIpAddress]",
+              "subnet": {
+                "id": "[concat(variables('vNetId'), '/subnets/', variables('names').virtualNetworkSubnet)]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('names').networkSecurityGroup)]"
+        }
+      }
+    },
+    {
+      "apiVersion": "[variables('templateAPIVersion')]",
+      "type": "Microsoft.Resources/deployments",
+      "name": "createVm",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('names').dnsVmNic)]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('scriptsUri'), '/create-vm.json')]",
+          "contentVersion": "[variables('contentVersion')]"
+        },
+        "parameters": {
+          "resourceAPIVersions": {
+            "value": "[variables('resourceAPIVersions')]"
+          },
+          "names": {
+            "value": "[variables('names')]"
+          },
+          "vmAttributes": {
+            "value": "[variables('vmAttributes')]"
+          },
+          "netConfig": {
+            "value": "[variables('netConfig')]"
+          },
+          "scriptsUri": {
+            "value": "[variables('scriptsUri')]"
+          },
+          "typeHandlerVersion": {
+            "value": "[variables('typeHandlerVersion')]"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "[variables('templateAPIVersion')]",
+      "type": "Microsoft.Resources/deployments",
+      "name": "updateVnet",
+      "dependsOn": [
+        "[concat('Microsoft.Resources/deployments/', 'createVm')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('scriptsUri'), '/update-vnet.json')]",
+          "contentVersion": "[variables('contentVersion')]"
+        },
+        "parameters": {
+          "resourceAPIVersions": {
+            "value": "[variables('resourceAPIVersions')]"
+          },
+          "names": {
+            "value": "[variables('names')]"
+          },
+          "netConfig": {
+            "value": "[variables('netConfig')]"
+          },
+          "typeHandlerVersion": {
+            "value": "[variables('typeHandlerVersion')]"
+          },
+          "scriptsUri": {
+            "value": "[variables('scriptsUri')]"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "[variables('resourceAPIVersions').userAssignedIdentities]",
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "name": "[variables('names').userAssignedIdentity]",
+      "location": "[resourceGroup().location]"
+    }
+  ]
+}

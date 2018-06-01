@@ -1,0 +1,30 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUsername": {
+      "value": "azure"
+    },
+    "adminPassword": {
+      "value": "GEN-PASSWORD"
+    },
+    "instanceType": {
+      "value": "Standard_A1_v2"
+    },
+    "resourceNamePrefix": {
+      "value": "quickstart"
+    },
+    "dnsHostName": {
+      "value": "dns"
+    },
+    "dnsPrivateZoneName": {
+      "value": "cdh-cluster.internal"
+    },
+    "addressPrefix": {
+      "value": "10.3.0.0/16"
+    },
+    "dnsVmIpAddress": {
+      "value": "10.3.0.4"
+    }
+  }
+}

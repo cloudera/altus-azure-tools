@@ -1,0 +1,75 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceAPIVersions": {
+      "type": "object"
+    },
+    "names": {
+      "type": "object"
+    },
+    "netConfig": {
+      "type": "object"
+    },
+    "typeHandlerVersion": {
+      "type": "string"
+    },
+    "scriptsUri": {
+      "type": "string"
+    }
+  },
+  "variables" : {
+    "singleQuote": "'"
+  },
+  "resources": [
+    {
+      "apiVersion": "[parameters('resourceAPIVersions').virtualNetworks]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[parameters('names').virtualNetwork]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "dhcpOptions": {
+          "dnsServers": [
+            "[parameters('netConfig').dnsVmIpAddress]"
+          ]
+        },
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('netConfig').addressPrefix]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[parameters('names').virtualNetworkSubnet]",
+            "properties": {
+              "addressPrefix": "[parameters('netConfig').addressPrefix]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('names').dnsVm, '/initVmScripts')]",
+      "apiVersion": "[parameters('resourceAPIVersions').virtualMachinesExtensions]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', parameters('names').virtualNetwork)]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "[parameters('typeHandlerVersion')]",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUris": [
+            "[concat(parameters('scriptsUri'), '/scripts/update-vm-dns.sh')]"
+          ]
+        },
+        "protectedSettings":{
+          "commandToExecute": "[concat('sh update-vm-dns.sh ', ' ', variables('singleQuote'), parameters('netConfig').dnsVmIpAddress, variables('singleQuote'))]"
+        }
+      }
+    }
+  ]
+}
