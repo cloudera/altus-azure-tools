@@ -10,9 +10,6 @@
     },
     "networkAddressSpace": {
       "value": "10.3.0.0/24"
-    },
-    "publicIps": {
-      "value": "No Public IPs (will not create inbound SSH rules)"
     }
   }
 }

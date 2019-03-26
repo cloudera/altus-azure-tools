@@ -1,5 +1,5 @@
 # By clicking "Deploy to Azure" you agree to the Terms and Conditions below.
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fcloudera%2Faltus-azure-tools%2Fmaster%2Fazure-quickstart-template-with-bind-dns%2Fazuredeploy.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fcloudera%2Faltus-azure-tools%2Fmaster%2Fazure-quickstart-template-with-bind-dns-and-public-ip%2Fazuredeploy.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png" />
 </a>
 
@@ -36,7 +36,6 @@ The template expects the following parameters:
 | dnsPrivateZoneName | DNS private zone name to be used for the CDH cluster | altus.quickstart |
 | networkAddressSpace | IPv4 CIDR subnet for the cluster and DNS VM | 10.3.0.4 |
 | dnsVmIpAddress | IP address for the DNS VM, must fall within the aforementioned subnet | 10.3.0.0/24 |
-| publicIps | Determines how Altus services connect to a cluster. If Altus connects through public IPs, the template includes inbound SSH rules for the network security group for Altus clusters. | No Public IPs |
 
 In order to deploy the template, all the files (template, parameters, and scripts)
 must be accessible via HTTP by the host performing the deployment.

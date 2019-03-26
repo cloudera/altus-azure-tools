@@ -1,20 +1,16 @@
-# By clicking "Deploy to Azure" you agree to the Terms and Conditions below.
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fcloudera%2Faltus-azure-tools%2Fmaster%2Fazure-quickstart-template-with-bind-dns%2Fazuredeploy.json" target="_blank">
+# Altus Azure Quickstart Environment Template
+
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fcloudera%2Faltus-azure-tools%2Fmaster%2Fazure-quickstart-template-with-public-ip%2Fazuredeploy.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png" />
 </a>
 
-#Altus Azure Quickstart Environment Template
-
 This template is intended to create the following Azure resources for a quickstart environment:
-  * virtual network
-  * network security group
-  * a VM running BIND to serve as a DNS server
-  * a user assigned managed service identity (MSI)
+  * Virtual Network
+  * Network Security Group
+  * DNS Zone
+  * User Assigned Managed Service Identity (MSI)
 
-The created VM will accept nsupdate requests so that CDH nodes created in the
-resource group can use it as a DNS server. The DNS VM is not created with a public IP.
-
-##Usage:
+## Usage:
 
 There are two ways to deploy the quickstart environment. The first, and simplest method,
 is to click the "Deploy to Azure" button at the top of this page. In this scenario, the
@@ -28,20 +24,14 @@ The template expects the following parameters:
 
 | Name   | Description | Default Value |
 |:--- |:---|:---|
-| adminUsername | Admin user for the VM | azureuser |
-| adminPassword | Admin password for the VM | {No Default} |
-| instanceType | Vm instance type, see: https://docs.microsoft.com/en-us/azure/cloud-services/cloud-services-sizes-specs | Standard_A2_v2 |
-| resourceNamePrefix | Naming prefix for the virtual network and network security group, which will be created with the names <PREFIX>-vnet and <PREFIX>-nsg respectively | {No Default} |
-| dnsHostName | DNS VM's short hostname (not FQDN) | altus-quickstart-dns-server |
-| dnsPrivateZoneName | DNS private zone name to be used for the CDH cluster | altus.quickstart |
-| networkAddressSpace | IPv4 CIDR subnet for the cluster and DNS VM | 10.3.0.4 |
-| dnsVmIpAddress | IP address for the DNS VM, must fall within the aforementioned subnet | 10.3.0.0/24 |
-| publicIps | Determines how Altus services connect to a cluster. If Altus connects through public IPs, the template includes inbound SSH rules for the network security group for Altus clusters. | No Public IPs |
+| resourceNamePrefix | Naming prefix for the virtual network and network security group, which will be created with the names <PREFIX>-vnet and <PREFIX>-nsg respectively | altus-quickstart |
+| dnsPrivateZoneName | DNS private zone name | altus.quickstart |
+| networkAddressSpace | Virtual Network Address space | 10.3.0.0/24 |
 
-In order to deploy the template, all the files (template, parameters, and scripts)
+In order to deploy the template, all the files (template, parameters etc.)
 must be accessible via HTTP by the host performing the deployment.
 
-##Example deployment (using Azure's REST API and curl):
+## Example deployment (using Azure's REST API and curl):
 
 ```
 CLIENT_ID=

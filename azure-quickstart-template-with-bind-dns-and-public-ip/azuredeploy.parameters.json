@@ -25,9 +25,6 @@
     },
     "dnsVmIpAddress": {
       "value": "10.3.0.4"
-    },
-    "publicIps": {
-      "value": "No Public IPs (will not create inbound SSH rules)"
     }
   }
 }

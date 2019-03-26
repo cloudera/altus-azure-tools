@@ -22,17 +22,6 @@
       "metadata": {
         "description": "Virtual Network address space"
       }
-    },
-    "publicIps": {
-      "type": "string",
-      "allowedValues": [
-        "Enable Public IPs (will create inbound SSH rules)",
-        "No Public IPs (will not create inbound SSH rules)"
-      ],
-      "defaultValue": "No Public IPs (will not create inbound SSH rules)",
-      "metadata": {
-        "description": "Determines how Altus services connect to a cluster. If Altus connects through public IPs, the template includes inbound SSH rules for the network security group for Altus clusters."
-      }
     }
   },
   "variables": {
@@ -46,14 +35,12 @@
       "userAssignedIdentities": "2015-08-31-PREVIEW"
     },
     "location": "[resourceGroup().location]",
-    "scriptsUri": "https://raw.githubusercontent.com/cloudera/altus-azure-tools/master/azure-quickstart-template",
     "names": {
       "networkSecurityGroup": "[concat(parameters('resourceNamePrefix'), '-nsg')]",
       "virtualNetwork": "[concat(parameters('resourceNamePrefix'), '-vnet')]",
       "virtualNetworkSubnet": "default",
       "dnsZone": "[parameters('dnsPrivateZoneName')]",
-      "userAssignedIdentity": "[concat(parameters('resourceNamePrefix'), '-ua-msi')]",
-      "updateNsg": "updateNsg"
+      "userAssignedIdentity": "[concat(parameters('resourceNamePrefix'), '-ua-msi')]"
     }
   },
   "resources": [
@@ -61,31 +48,94 @@
       "apiVersion": "[variables('resourceAPIVersions').networkSecurityGroups]",
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('names').networkSecurityGroup]",
-      "location": "[variables('location')]"
-    },
-    {
-      "condition": "[equals(parameters('publicIps'), 'Enable Public IPs (will create inbound SSH rules)')]",
-      "apiVersion": "[variables('templateAPIVersion')]",
-      "type": "Microsoft.Resources/deployments",
-      "name": "[variables('names').updateNsg]",
-      "dependsOn": ["[concat('Microsoft.Network/networkSecurityGroups/', variables('names').networkSecurityGroup)]"],
+      "location": "[variables('location')]",
       "properties": {
-        "mode": "Incremental",
-        "templateLink": {
-          "uri": "[concat(variables('scriptsUri'), '/update-nsg.json')]",
-          "contentVersion": "[variables('contentVersion')]"
-        },
-        "parameters": {
-          "networkSecurityGroupName":{
-            "value":"[variables('names').networkSecurityGroup]"
+        "securityRules": [
+          {
+            "name": "SSH_116",
+            "properties": {
+              "description": "Allows SSH traffic to 52.88.35.116/32",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "52.88.35.116/32",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
           },
-          "nsgResourceAPIVersion": {
-            "value": "[variables('resourceAPIVersions').networkSecurityGroups]"
+          {
+            "name": "SSH_7",
+            "properties": {
+              "description": "Allows SSH traffic to 52.37.120.7/32",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "52.37.120.7/32",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 101,
+              "direction": "Inbound"
+            }
           },
-          "location": {
-            "value": "[variables('location')]"
+          {
+            "name": "SSH_144",
+            "properties": {
+              "description": "Allows SSH traffic to 50.112.20.144/32",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "50.112.20.144/32",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 102,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "SSH_60",
+            "properties": {
+              "description": "Allows SSH traffic to 34.211.1.60/32",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "34.211.1.60/32",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 103,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "SSH_237",
+            "properties": {
+              "description": "Allows SSH traffic to 34.210.228.237/32",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "34.210.228.237/32",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 104,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "SSH_120",
+            "properties": {
+              "description": "Allows SSH traffic to 52.26.206.120/32",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "52.26.206.120/32",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 105,
+              "direction": "Inbound"
+            }
           }
-        }
+        ]
       }
     },
     {

@@ -44,6 +44,22 @@ disable_waagent_hostname_monitor()
     systemctl restart waagent
 }
 
+no_hostname_mgmt()
+{
+    # By default NetworkManager, will try to manage the host's transient hostname.
+    # This also means that manually setting the hostname will trigger NM to set the
+    # search domain in resolv.conf
+
+    echo "Disabling NetworkManager hostname management"
+
+    cat > /etc/NetworkManager/conf.d/noHostnameMgmt.conf << "EOF"
+[main]
+hostname-mode=none
+EOF
+
+    systemctl restart NetworkManager
+}
+
 custom_dns_update()
 {
     echo "Start custom DNS update."
@@ -102,21 +118,90 @@ EOF
     service network restart
 
     # Confirm DNS record has been updated, retry if update did not work
+    # Note that the verification process is somewhat convoluted to deal with
+    # possible error cases:
+    #   - intial search domain is set to internal.cloudapp.net instead of
+    #     reddog.microsoft.com. This necessitates verifying that the host's
+    #     resolvable FQDN is in fact the correct one (internal.cloudapp.net
+    #     hostnames are resolvable but is probably not the correct one).
+    #   - custom DNS server is unresponsive
+    #   - custom DNS server's PTR record is empty
     i=0
-    until [ $i -ge 5 ]
+    until [ $i -ge 3 ]
     do
-        sleep 5
-        i=$((i+1))
-        hostname | nslookup && break
+        sleep 10
+
+        dns_server_ip="$(grep -i '^nameserver' /etc/resolv.conf | cut -d ' ' -f 2)"
+
+        # note that dig writes error messages to stdout, so checking return status is
+        # the best way to check for failures
+        set +e
+        dns_server_url=$(dig +short -x "$dns_server_ip")
+        dig_response=$?
+        set -e
+        echo "Using DNS server with url $dns_server_url and IP $dns_server_ip"
+
+        domain=$(echo "$dns_server_url" | cut -d ' ' -f 3 | cut -d '.' -f 2- | rev | cut -c 2- | rev)
+
+        if [ "x$domain" != "x" ] && [ $dig_response -eq 0 ] ; then
+            hostname -f | grep -e "$domain" && break
+        fi
         service network restart
+        i=$((i+1))
     done
 
-    if [ $i -ge 5 ]; then
+    if [ $i -ge 3 ]; then
         echo "Dynamic DNS update failed."
         exit 1
     fi
 
     echo "Successfully updated custom DNS."
+}
+
+generate_custom_dns_cleanup_service() {
+  #
+  # Create a oneshot service that runs after NetworkManger.
+  #
+
+  echo "Setting up DNS record cleanup service..."
+
+  cat > /usr/sbin/cloudera-custom-dns-cleanup.sh <<"EOF"
+#!/bin/bash
+
+IP_ADDR=$(hostname -I)
+PTR_REC=$(printf %s "$IP_ADDR." | tac -s.)in-addr.arpa
+A_REC=$(hostname -f)
+NSUPDATE_CMDS=$(mktemp -t nsupdate.XXXXXXXXXX)
+
+echo "Attempting to unregister records for $A_REC and $PTR_REC"
+{
+    echo "update delete $A_REC a"
+    echo "send"
+    echo "update delete $PTR_REC ptr"
+    echo "send"
+} > "$NSUPDATE_CMDS"
+nsupdate "$NSUPDATE_CMDS"
+EOF
+  chmod +x /usr/sbin/cloudera-custom-dns-cleanup.sh
+
+  cat > /etc/systemd/system/cloudera-custom-dns-cleanup.service <<"EOF"
+[Unit]
+Description=Cloudera custom DNS record cleanup
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+ExecStop=/usr/sbin/cloudera-custom-dns-cleanup.sh
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  systemctl enable cloudera-custom-dns-cleanup
+  systemctl start cloudera-custom-dns-cleanup
 }
 
 # hostname change monitoring is disabled regardless of using Azure or
@@ -164,6 +249,8 @@ if [ $i -ge $TOTAL_WAIT_CYCLES ]; then
     echo "Failed to update DNS search domain after $((i*SLEEP_INTERVAL_SECONDS)) seconds. Falling back to custom DNS."
     # Fall back to trying custom DNS update.
     custom_dns_update
+    no_hostname_mgmt
+    generate_custom_dns_cleanup_service
 else
     echo "Successfully updated DNS search domain after $((i*SLEEP_INTERVAL_SECONDS)) seconds."
 fi
@@ -176,6 +263,6 @@ fi
 # remove the Azure DNS record for the VM.
 # 3) When using custom DNS, set the hostname to FQDN as well so that the names
 # are consistent with what we have using Azure DNS
-hostnamectl set-hostname "$(hostname -f)"
+hostnamectl set-hostname "$(dig +short -x $(hostname -I | tr -d ' ') | sed -r 's/(.+)\.$/\1/g')"
 
 exit 0

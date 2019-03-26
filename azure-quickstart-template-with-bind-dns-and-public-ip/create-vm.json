@@ -1,0 +1,97 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceAPIVersions": {
+      "type": "object"
+    },
+    "names": {
+      "type": "object"
+    },
+    "vmAttributes": {
+      "type": "object"
+    },
+    "netConfig": {
+      "type": "object"
+    },
+    "scriptsUri": {
+      "type": "string"
+    },
+    "typeHandlerVersion": {
+      "type": "string"
+    }
+  },
+  "variables" : {
+    "singleQuote": "'"
+  },
+  "resources": [
+    {
+      "apiVersion": "[parameters('resourceAPIVersions').virtualMachines]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(parameters('names').dnsVm)]",
+      "plan": {
+        "name": "7_4",
+        "publisher": "cloudera",
+        "product": "cloudera-centos-os"
+      },
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmAttributes').instanceType]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('names').dnsVm]",
+          "adminUsername": "[parameters('vmAttributes').adminUsername]",
+          "adminPassword": "[parameters('vmAttributes').adminPassword]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": "false"
+          }
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "cloudera",
+            "offer": "cloudera-centos-os",
+            "sku": "7_4",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[parameters('names').osDisk]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('names').dnsVmNic)]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('names').dnsVm, '/initVmScripts')]",
+      "apiVersion": "[parameters('resourceAPIVersions').virtualMachinesExtensions]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('names').dnsVm)]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "[parameters('typeHandlerVersion')]",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUris": [
+            "[concat(parameters('scriptsUri'), '/scripts/initialize-vm.sh')]",
+            "[concat(parameters('scriptsUri'), '/scripts/initialize-dns-server.sh')]"
+          ]
+        },
+        "protectedSettings":{
+          "commandToExecute": "[concat('sh initialize-vm.sh ', ' ', variables('singleQuote'), parameters('vmAttributes').adminUsername, variables('singleQuote'), ' ', variables('singleQuote'), parameters('netConfig').dnsPrivateZoneName, variables('singleQuote'), ' ', variables('singleQuote'), parameters('netConfig').dnsVmIpAddress, variables('singleQuote'))]"
+        }
+      }
+    }
+  ]
+}
